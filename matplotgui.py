@@ -7,13 +7,14 @@ A,B,C, and D are pre-defined for now.
 import wx
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigCanvas
-
+import os
 import numpy as np
  
 a = float(0)
 b = float(0)
 c = float(0)
 d = float(0)
+counter = 0
  
 class MyFrame(wx.Frame):
  def __init__(self, *args, **kwds):
@@ -26,6 +27,18 @@ class MyFrame(wx.Frame):
  def __do_layout(self):
 	sizer = wx.BoxSizer(wx.VERTICAL)
 	self.SetSizer(sizer)
+	
+	#File menu
+	filemenu = wx.Menu()
+	saveFile = filemenu.Append(-1, "&Save plot\tCtrl-S", "Save plot to file")
+	self.Bind(wx.EVT_MENU, self.on_save_plot, saveFile)	
+	menuExit = filemenu.Append(wx.ID_EXIT, "Exit\tCtrl-Q", "End program")
+	self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
+	
+	#Create menubar
+	menuBar = wx.MenuBar()
+	menuBar.Append(filemenu, "File")
+	self.SetMenuBar(menuBar)
 
 	# Create matplotlib figure
 	self.fig = Figure(figsize=(5.0, 4.0), dpi=100)
@@ -58,6 +71,12 @@ class MyFrame(wx.Frame):
 	box.Add(self.textbox2, 1)
 	box.Add(self.textbox3, 1)
 	box.Add(self.textbox4, 1)
+	
+	#Set default text values
+	self.textbox1.SetValue('0')
+	self.textbox2.SetValue('0')
+	self.textbox3.SetValue('0')
+	self.textbox4.SetValue('0')
 
 	sizer.Add(box,0, wx.EXPAND)
 	self.Centre()
@@ -65,6 +84,9 @@ class MyFrame(wx.Frame):
 	self.Layout()
 
  def draw_figure1(self, event):
+	global counter
+	if counter <= 4:
+		counter = counter + 1
 	global a
 	global b
 	global c
@@ -73,24 +95,25 @@ class MyFrame(wx.Frame):
 		if not(self.textbox1.IsEmpty()):
 			a = float(self.textbox1.GetValue())
 		else:
-			a = float(self.textbox1.SetValue('0'))
+			a = float(0)
 		if not(self.textbox2.IsEmpty()):	
 			b = float(self.textbox2.GetValue())
 		else:
-			b = float(self.textbox2.SetValue('0'))
+			b = float(0)
 		if not(self.textbox3.IsEmpty()):	
 			c = float(self.textbox3.GetValue())
 		else:
-			c = float(self.textbox3.SetValue('0'))
+			c = float(0)
 		if not(self.textbox4.IsEmpty()):	
 			d = float(self.textbox4.GetValue())
 		else:
-			d = float(self.textbox4.SetValue('0'))
+			d = float(0)
 	except ValueError:
 		wx.MessageBox("Invalid input. Must be floating point numbers","Error",
                     wx.OK|wx.ICON_EXCLAMATION)
 		return
-	self.draw_figure()
+	if counter > 4:
+		self.draw_figure()
 	
  def draw_figure(self):
 	self.ax.clear()
@@ -104,6 +127,25 @@ class MyFrame(wx.Frame):
 		i = i + 100
 	self.ax.plot(x,y,picker=5)
 	self.canvas.draw()
+ def OnExit(self, e):
+	dlg = wx.MessageDialog(self, "Are you sure you want to quit?", "Question", wx.YES_NO|wx.ICON_EXCLAMATION)
+	if dlg.ShowModal() == wx.ID_YES:	
+		self.Close(True)
+ def on_save_plot(self, event):
+	file_choices = "PNG (*.png)|*.png"
+
+	dlg = wx.FileDialog(
+		self, 
+		message="Save plot as...",
+		defaultDir=os.getcwd(),
+		defaultFile="plot.png",
+		wildcard=file_choices,
+		style=wx.SAVE|wx.OVERWRITE_PROMPT)
+
+	if dlg.ShowModal() == wx.ID_OK:
+		path = dlg.GetPath()
+		self.canvas.print_figure(path, dpi=100)
+		#self.flash_status_message("Saved to %s" % path)
  def on_pick(self, event):
 	print 'hello world'
 
